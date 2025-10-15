@@ -7,9 +7,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
@@ -139,6 +143,12 @@ fun DrawerSheet(
                     drawerState.close()
                 }
                 navigateAndClearStack(navController, SONG_SCREEN)
+            },
+            icon = {
+                Icon(
+                    Icons.Default.Star,
+                    contentDescription = "노래 아이콘"
+                )
             }
         )
         NavigationDrawerItem(
@@ -149,6 +159,12 @@ fun DrawerSheet(
                     drawerState.close()
                 }
                 navigateAndClearStack(navController, SINGER_SCREEN)
+            },
+            icon = {
+                Icon(
+                    Icons.Default.Face,
+                    contentDescription = "가수 아이콘"
+                )
             }
         )
     }
