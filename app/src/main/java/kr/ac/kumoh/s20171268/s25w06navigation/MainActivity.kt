@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -11,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
@@ -31,6 +31,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -55,9 +56,31 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+data class Screen(
+    val name: String,
+    val route: String,
+    val icon: ImageVector,
+    val description: String,
+)
+
 object Destinations {
     const val SONG_SCREEN = "song_screen"
     const val SINGER_SCREEN = "singer_screen"
+
+    val screens = listOf(
+        Screen(
+            "노래",
+            SONG_SCREEN,
+            Icons.Default.Star,
+            "노래 아이콘",
+        ),
+        Screen(
+            "가수",
+            SINGER_SCREEN,
+            Icons.Default.Face,
+            "가수 아이콘"
+        ),
+    )
 }
 
 private fun navigateAndClearStack(
@@ -76,6 +99,7 @@ private fun navigateAndClearStack(
 @Composable
 fun MainScreen() {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
+    // NOTE: Scaffold 안에 있는 navController 주석 처리할 것
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
 
@@ -103,14 +127,10 @@ fun MainScreen() {
                 modifier = Modifier.padding(innerPadding),
             ) {
                 composable(SONG_SCREEN) {
-                    SongScreen {
-                        navigateAndClearStack(navController, SINGER_SCREEN)
-                    }
+                    SongScreen()
                 }
                 composable(SINGER_SCREEN) {
-                    SingerScreen {
-                        navigateAndClearStack(navController, SONG_SCREEN)
-                    }
+                    SingerScreen()
                 }
             }
         }
@@ -118,26 +138,24 @@ fun MainScreen() {
 }
 
 @Composable
-fun SongScreen(onNavigateToSinger: () -> Unit) {
-    Column {
+fun SongScreen() {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.primary)
+    ) {
         Text("노래 화면")
-        Button(
-            onClick = onNavigateToSinger
-        ) {
-            Text("가수 화면으로 이동")
-        }
     }
 }
 
 @Composable
-fun SingerScreen(onNavigateToSong: () -> Unit) {
-    Column {
+fun SingerScreen() {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.secondary)
+    ) {
         Text("가수 화면")
-        Button(
-            onClick = onNavigateToSong
-        ) {
-            Text("노래 화면으로 이동")
-        }
     }
 }
 
@@ -150,38 +168,60 @@ fun DrawerSheet(
     val currentDestination = navController.currentBackStackEntryAsState().value?.destination
 
     ModalDrawerSheet {
-        NavigationDrawerItem(
-            label = { Text("노래 화면") },
-            selected = currentDestination?.route == SONG_SCREEN,
-            onClick = {
-                scope.launch {
-                    drawerState.close()
+        Destinations.screens.forEach { screen ->
+            NavigationDrawerItem(
+                label = { Text(screen.name) },
+                selected = currentDestination?.route == screen.route,
+                onClick = {
+                    scope.launch {
+                        drawerState.close()
+                    }
+                    navigateAndClearStack(
+                        navController,
+                        screen.route
+                    )
+                },
+                icon = {
+                    Icon(
+                        screen.icon,
+                        contentDescription = screen.description
+                    )
                 }
-                navigateAndClearStack(navController, SONG_SCREEN)
-            },
-            icon = {
-                Icon(
-                    Icons.Default.Star,
-                    contentDescription = "노래 아이콘"
-                )
-            }
-        )
-        NavigationDrawerItem(
-            label = { Text("가수 화면") },
-            selected = currentDestination?.route == SINGER_SCREEN,
-            onClick = {
-                scope.launch {
-                    drawerState.close()
-                }
-                navigateAndClearStack(navController, SINGER_SCREEN)
-            },
-            icon = {
-                Icon(
-                    Icons.Default.Face,
-                    contentDescription = "가수 아이콘"
-                )
-            }
-        )
+            )
+        }
+
+//        NavigationDrawerItem(
+//            label = { Text("노래 화면") },
+//            selected = currentDestination?.route == SONG_SCREEN,
+//            onClick = {
+//                scope.launch {
+//                    drawerState.close()
+//                }
+//                navigateAndClearStack(navController, SONG_SCREEN)
+//            },
+//            icon = {
+//                Icon(
+//                    Icons.Default.Star,
+//                    contentDescription = "노래 아이콘"
+//                )
+//            }
+//        )
+//        NavigationDrawerItem(
+//            label = { Text("가수 화면") },
+//            selected = currentDestination?.route == SINGER_SCREEN,
+//            onClick = {
+//                scope.launch {
+//                    drawerState.close()
+//                }
+//                navigateAndClearStack(navController, SINGER_SCREEN)
+//            },
+//            icon = {
+//                Icon(
+//                    Icons.Default.Face,
+//                    contentDescription = "가수 아이콘"
+//                )
+//            }
+//        )
     }
 }
 
@@ -222,35 +262,52 @@ fun BottomBar(
     val currentDestination = navController.currentBackStackEntryAsState().value?.destination
 
     NavigationBar {
-        NavigationBarItem(
-            label = {
-                Text("노래")
-            },
-            icon = {
-                Icon(
-                    Icons.Default.Star,
-                    contentDescription = "노래 아이콘"
-                )
-            },
-            selected = currentDestination?.route == SONG_SCREEN,
-            onClick = {
-                onNavigate(SONG_SCREEN)
-            }
-        )
-        NavigationBarItem(
-            label = {
-                Text("가수")
-            },
-            icon = {
-                Icon(
-                    Icons.Default.Face,
-                    contentDescription = "가수 아이콘"
-                )
-            },
-            selected = currentDestination?.route == SINGER_SCREEN,
-            onClick = {
-                onNavigate(SINGER_SCREEN)
-            }
-        )
+        Destinations.screens.forEach { screen ->
+            NavigationBarItem(
+                label = {
+                    Text(screen.name)
+                },
+                icon = {
+                    Icon(
+                        screen.icon,
+                        contentDescription = screen.description
+                    )
+                },
+                selected = currentDestination?.route == screen.route,
+                onClick = {
+                    onNavigate(screen.route)
+                }
+            )
+        }
+//        NavigationBarItem(
+//            label = {
+//                Text("노래")
+//            },
+//            icon = {
+//                Icon(
+//                    Icons.Default.Star,
+//                    contentDescription = "노래 아이콘"
+//                )
+//            },
+//            selected = currentDestination?.route == SONG_SCREEN,
+//            onClick = {
+//                onNavigate(SONG_SCREEN)
+//            }
+//        )
+//        NavigationBarItem(
+//            label = {
+//                Text("가수")
+//            },
+//            icon = {
+//                Icon(
+//                    Icons.Default.Face,
+//                    contentDescription = "가수 아이콘"
+//                )
+//            },
+//            selected = currentDestination?.route == SINGER_SCREEN,
+//            onClick = {
+//                onNavigate(SINGER_SCREEN)
+//            }
+//        )
     }
 }
