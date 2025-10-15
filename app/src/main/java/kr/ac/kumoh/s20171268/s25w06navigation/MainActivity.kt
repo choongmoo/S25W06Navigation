@@ -12,11 +12,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import kr.ac.kumoh.s20171268.s25w06navigation.Destinations.SINGER_SCREEN
+import kr.ac.kumoh.s20171268.s25w06navigation.Destinations.SONG_SCREEN
 import kr.ac.kumoh.s20171268.s25w06navigation.ui.theme.S25W06NavigationTheme
 
 class MainActivity : ComponentActivity() {
@@ -31,6 +33,24 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+object Destinations {
+    const val SONG_SCREEN = "song_screen"
+    const val SINGER_SCREEN = "singer_screen"
+}
+
+private fun navigateAndClearStack(
+    navController: NavHostController,
+    route: String
+) {
+    navController.navigate(route) {
+        launchSingleTop = true
+
+        popUpTo(navController.graph.findStartDestination().id) {
+            inclusive = true
+        }
+    }
+}
+
 @Composable
 fun MainScreen() {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -38,35 +58,29 @@ fun MainScreen() {
 
         NavHost(
             navController = navController,
-            startDestination = "song_screen",
+            startDestination = SONG_SCREEN,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable("song_screen") {
-                SongScreen(navController)
+            composable(SONG_SCREEN) {
+                SongScreen {
+                    navigateAndClearStack(navController, SINGER_SCREEN)
+                }
             }
-            composable("singer_screen") {
-                SingerScreen(navController)
+            composable(SINGER_SCREEN) {
+                SingerScreen {
+                    navigateAndClearStack(navController, SONG_SCREEN)
+                }
             }
         }
     }
 }
 
 @Composable
-fun SongScreen(navController: NavController) {
+fun SongScreen(onNavigateToSinger: () -> Unit) {
     Column {
         Text("노래 화면")
         Button(
-            onClick = {
-                navController.navigate("singer_screen") {
-                    // 이미 화면이 스택에 있다면 새로 만들지 않고 기존 화면으로 이동
-                    launchSingleTop = true
-
-                    // 내비게이션 그래프의 시작 지점까지의 모든 화면을 스택에서 제거
-                    popUpTo(navController.graph.findStartDestination().id) {
-                        inclusive = true
-                    }
-                }
-            }
+            onClick = onNavigateToSinger
         ) {
             Text("가수 화면으로 이동")
         }
@@ -74,19 +88,11 @@ fun SongScreen(navController: NavController) {
 }
 
 @Composable
-fun SingerScreen(navController: NavController) {
+fun SingerScreen(onNavigateToSong: () -> Unit) {
     Column {
         Text("가수 화면")
         Button(
-            onClick = {
-                navController.navigate("song_screen") {
-                    launchSingleTop = true
-
-                    popUpTo(navController.graph.findStartDestination().id) {
-                        inclusive = true
-                    }
-                }
-            }
+            onClick = onNavigateToSong
         ) {
             Text("노래 화면으로 이동")
         }
