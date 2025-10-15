@@ -5,13 +5,20 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
@@ -32,15 +39,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kr.ac.kumoh.s20171268.s25w06navigation.Destinations.SINGER_SCREEN
+import kr.ac.kumoh.s20171268.s25w06navigation.Destinations.SONG_DETAIL_ROUTE
+import kr.ac.kumoh.s20171268.s25w06navigation.Destinations.SONG_DETAIL_SCREEN
+import kr.ac.kumoh.s20171268.s25w06navigation.Destinations.SONG_ID_ARG
 import kr.ac.kumoh.s20171268.s25w06navigation.Destinations.SONG_SCREEN
 import kr.ac.kumoh.s20171268.s25w06navigation.ui.theme.S25W06NavigationTheme
 
@@ -66,6 +81,10 @@ data class Screen(
 object Destinations {
     const val SONG_SCREEN = "song_screen"
     const val SINGER_SCREEN = "singer_screen"
+
+    const val SONG_DETAIL_SCREEN = "song_detail_screen"
+    const val SONG_ID_ARG = "songId"
+    const val SONG_DETAIL_ROUTE = "$SONG_DETAIL_SCREEN/{$SONG_ID_ARG}"
 
     val screens = listOf(
         Screen(
@@ -127,10 +146,31 @@ fun MainScreen() {
                 modifier = Modifier.padding(innerPadding),
             ) {
                 composable(SONG_SCREEN) {
-                    SongScreen()
+                    SongScreen {
+//                        // id가 달라지면 다른 화면으로 인식해서 스택이 삭제되지 않고 계속 쌓임
+//                        // back 버튼 누르면 계속 앞으로 이동하는 문제 발생
+//                        navigateAndClearStack(
+//                            navController,
+//                            "$SONG_DETAIL_SCREEN/$it"
+//                        )
+                        // Stack은 유지하면서 중복 생성만 방지함
+                        navController.navigate("$SONG_DETAIL_SCREEN/$it") {
+                            launchSingleTop = true
+                        }
+                    }
                 }
                 composable(SINGER_SCREEN) {
                     SingerScreen()
+                }
+                composable(
+                    route = SONG_DETAIL_ROUTE,
+                    arguments = listOf(
+                        navArgument(SONG_ID_ARG) {
+                            type = NavType.IntType
+                        },
+                    )
+                ) {
+                    SongDetailScreen(it.arguments?.getInt(SONG_ID_ARG))
                 }
             }
         }
@@ -138,13 +178,39 @@ fun MainScreen() {
 }
 
 @Composable
-fun SongScreen() {
-    Column(
-        Modifier
+fun SongScreen(
+    onNavigateToDetail: (Int) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.primary)
+            .background(MaterialTheme.colorScheme.primary),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp)
     ) {
-        Text("노래 화면")
+        items(30) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp),
+                colors = CardDefaults.cardColors(
+                    MaterialTheme.colorScheme.surfaceVariant,
+                ),
+                elevation = CardDefaults
+                    .cardElevation(16.dp),
+                onClick = {
+                    onNavigateToDetail(it)
+                }
+            ) {
+                Text(
+                    text = "노래 $it",
+                    modifier = Modifier
+                        .padding(16.dp),
+                    fontSize = 30.sp,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
     }
 }
 
@@ -189,39 +255,6 @@ fun DrawerSheet(
                 }
             )
         }
-
-//        NavigationDrawerItem(
-//            label = { Text("노래 화면") },
-//            selected = currentDestination?.route == SONG_SCREEN,
-//            onClick = {
-//                scope.launch {
-//                    drawerState.close()
-//                }
-//                navigateAndClearStack(navController, SONG_SCREEN)
-//            },
-//            icon = {
-//                Icon(
-//                    Icons.Default.Star,
-//                    contentDescription = "노래 아이콘"
-//                )
-//            }
-//        )
-//        NavigationDrawerItem(
-//            label = { Text("가수 화면") },
-//            selected = currentDestination?.route == SINGER_SCREEN,
-//            onClick = {
-//                scope.launch {
-//                    drawerState.close()
-//                }
-//                navigateAndClearStack(navController, SINGER_SCREEN)
-//            },
-//            icon = {
-//                Icon(
-//                    Icons.Default.Face,
-//                    contentDescription = "가수 아이콘"
-//                )
-//            }
-//        )
     }
 }
 
@@ -279,35 +312,24 @@ fun BottomBar(
                 }
             )
         }
-//        NavigationBarItem(
-//            label = {
-//                Text("노래")
-//            },
-//            icon = {
-//                Icon(
-//                    Icons.Default.Star,
-//                    contentDescription = "노래 아이콘"
-//                )
-//            },
-//            selected = currentDestination?.route == SONG_SCREEN,
-//            onClick = {
-//                onNavigate(SONG_SCREEN)
-//            }
-//        )
-//        NavigationBarItem(
-//            label = {
-//                Text("가수")
-//            },
-//            icon = {
-//                Icon(
-//                    Icons.Default.Face,
-//                    contentDescription = "가수 아이콘"
-//                )
-//            },
-//            selected = currentDestination?.route == SINGER_SCREEN,
-//            onClick = {
-//                onNavigate(SINGER_SCREEN)
-//            }
-//        )
+    }
+}
+
+@Composable
+fun SongDetailScreen(songId: Int?) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = "노래 $songId",
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            fontSize = 100.sp,
+            textAlign = TextAlign.Center,
+        )
     }
 }
